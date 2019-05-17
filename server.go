@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -16,6 +17,7 @@ func NewHivemindServer() *HivemindServer {
 	router := http.NewServeMux()
 	router.Handle("/", http.HandlerFunc(h.rootHandler))
 	router.Handle("/api/", http.HandlerFunc(h.apiHandler))
+	router.Handle("/api/sensor/", http.HandlerFunc(h.apiSensorHandler))
 
 	h.Handler = router
 
@@ -23,7 +25,7 @@ func NewHivemindServer() *HivemindServer {
 }
 
 func (h *HivemindServer) rootHandler(w http.ResponseWriter, r *http.Request) {
-	url := r.URL.RequestURI()
+	url := r.URL.Path
 	if url == "/" {
 		w.WriteHeader(http.StatusOK)
 	} else {
@@ -32,8 +34,14 @@ func (h *HivemindServer) rootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HivemindServer) apiHandler(w http.ResponseWriter, r *http.Request) {
+	endpoint := r.URL.Path[len("/api"):]
 	w.Header().Set("content-type", "application/json")
-	if r.URL.RequestURI() != "/api/" {
+	if endpoint != "/" {
 		w.WriteHeader(http.StatusNotImplemented)
 	}
+}
+
+func (h *HivemindServer) apiSensorHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+	fmt.Fprint(w, "64")
 }

@@ -52,6 +52,21 @@ func TestServer(t *testing.T) {
 	})
 }
 
+func TestSensorAPI(t *testing.T) {
+	server := NewHivemindServer()
+
+	t.Run("return json value: 64, status 200 on GET /api/sensor/test", func(t *testing.T) {
+		request := newGetRequest("api/sensor/test")
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertBody(t, response.Body.String(), "64")
+		assertResponseCode(t, response.Code, http.StatusOK)
+		assertContentType(t, response.Header().Get("content-type"), "application/json")
+	})
+}
+
 // helpers
 func assertBody(t *testing.T, got, want string) {
 	t.Helper()
