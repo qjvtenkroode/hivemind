@@ -3,15 +3,22 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strings"
 )
+
+// HivemindStore is an interface for datastorage
+type HivemindStore interface {
+	getSensorValue(id string) int
+}
 
 // HivemindServer is a HTTP interface for Hivemind
 type HivemindServer struct {
+	store HivemindStore
 	http.Handler
 }
 
 // NewHivemindServer creates a HivemindServer with routing configured
-func NewHivemindServer() *HivemindServer {
+func NewHivemindServer(s HivemindStore) *HivemindServer {
 	h := new(HivemindServer)
 
 	router := http.NewServeMux()
@@ -20,6 +27,8 @@ func NewHivemindServer() *HivemindServer {
 	router.Handle("/api/sensor/", http.HandlerFunc(h.apiSensorHandler))
 
 	h.Handler = router
+
+	h.store = s
 
 	return h
 }
@@ -42,6 +51,35 @@ func (h *HivemindServer) apiHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HivemindServer) apiSensorHandler(w http.ResponseWriter, r *http.Request) {
+	trailing := r.URL.Path[len("/api/sensor"):]
+	id := strings.Split(trailing[1:], "/")[0]
 	w.Header().Set("content-type", "application/json")
-	fmt.Fprint(w, "64")
+	switch r.Method {
+	case http.MethodGet:
+		h.apiSensorGet(w, trailing, id)
+	case http.MethodPost:
+		h.apiSensorPost(w, trailing, id)
+	case http.MethodPut:
+		h.apiSensorPut(w, trailing, id)
+	}
+}
+
+func (h *HivemindServer) apiSensorGet(w http.ResponseWriter, trailing, id string) {
+	value := h.store.getSensorValue(id)
+	if value == 0 {
+		w.WriteHeader(http.StatusNotFound)
+	}
+	fmt.Fprint(w, value)
+}
+
+func (h *HivemindServer) apiSensorPost(w http.ResponseWriter, trailing, id string) {
+	if trailing != "/" {
+		w.WriteHeader(http.StatusNotImplemented)
+	} else {
+		w.WriteHeader(http.StatusAccepted)
+	}
+}
+
+func (h *HivemindServer) apiSensorPut(w http.ResponseWriter, trailing, id string) {
+	w.WriteHeader(http.StatusAccepted)
 }

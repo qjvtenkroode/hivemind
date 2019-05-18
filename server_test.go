@@ -9,7 +9,7 @@ import (
 )
 
 func TestServer(t *testing.T) {
-	server := NewHivemindServer()
+	server := NewHivemindServer(nil)
 
 	t.Run("return empty body and status 200 on /", func(t *testing.T) {
 		request := newGetRequest("")
@@ -53,7 +53,12 @@ func TestServer(t *testing.T) {
 }
 
 func TestSensorAPI(t *testing.T) {
-	server := NewHivemindServer()
+	store := StubHivemindStore{
+		map[string]int{
+			"test": 64,
+		},
+	}
+	server := NewHivemindServer(&store)
 
 	t.Run("return json value: 64, status 200 on GET /api/sensor/test", func(t *testing.T) {
 		request := newGetRequest("api/sensor/test")
@@ -65,6 +70,51 @@ func TestSensorAPI(t *testing.T) {
 		assertResponseCode(t, response.Code, http.StatusOK)
 		assertContentType(t, response.Header().Get("content-type"), "application/json")
 	})
+
+	t.Run("return status 404 on GET /api/sensor/{random}", func(t *testing.T) {
+		request := newGetRequest(fmt.Sprintf("api/sensor/%s", randomString(8)))
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertResponseCode(t, response.Code, http.StatusNotFound)
+	})
+
+	t.Run("return status 202 on POST /api/sensor/", func(t *testing.T) {
+		request := newPostRequest("api/sensor/")
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertResponseCode(t, response.Code, http.StatusAccepted)
+	})
+
+	t.Run("return status 503 on POST /api/sensor/test", func(t *testing.T) {
+		request := newPostRequest("api/sensor/test")
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertResponseCode(t, response.Code, http.StatusNotImplemented)
+	})
+
+	t.Run("return status 202 on PUT /api/sensor/test", func(t *testing.T) {
+		request := newPutRequest("api/sensor/test")
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertResponseCode(t, response.Code, http.StatusAccepted)
+	})
+}
+
+// stubs
+type StubHivemindStore struct {
+	sensors map[string]int
+}
+
+func (s *StubHivemindStore) getSensorValue(id string) int {
+	return s.sensors[id]
 }
 
 // helpers
@@ -91,6 +141,16 @@ func assertContentType(t *testing.T, got, want string) {
 
 func newGetRequest(url string) *http.Request {
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/%s", url), nil)
+	return req
+}
+
+func newPostRequest(url string) *http.Request {
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/%s", url), nil)
+	return req
+}
+
+func newPutRequest(url string) *http.Request {
+	req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("/%s", url), nil)
 	return req
 }
 
