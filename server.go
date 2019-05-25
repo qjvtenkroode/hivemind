@@ -2,13 +2,16 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
 // HivemindStore is an interface for datastorage
 type HivemindStore interface {
 	getSensorValue(id string) int
+	storeSensorValue(id string, value int) error
 }
 
 // HivemindServer is a HTTP interface for Hivemind
@@ -60,7 +63,11 @@ func (h *HivemindServer) apiSensorHandler(w http.ResponseWriter, r *http.Request
 	case http.MethodPost:
 		h.apiSensorPost(w, trailing, id)
 	case http.MethodPut:
-		h.apiSensorPut(w, trailing, id)
+		var body []byte
+		if r.Body != nil {
+			body, _ = ioutil.ReadAll(r.Body)
+		}
+		h.apiSensorPut(w, trailing, id, body)
 	}
 }
 
@@ -80,6 +87,11 @@ func (h *HivemindServer) apiSensorPost(w http.ResponseWriter, trailing, id strin
 	}
 }
 
-func (h *HivemindServer) apiSensorPut(w http.ResponseWriter, trailing, id string) {
+func (h *HivemindServer) apiSensorPut(w http.ResponseWriter, trailing, id string, body []byte) {
+	value, _ := strconv.Atoi(string(body))
+	err := h.store.storeSensorValue(id, value)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 	w.WriteHeader(http.StatusAccepted)
 }

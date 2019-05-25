@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -81,7 +83,7 @@ func TestSensorAPI(t *testing.T) {
 	})
 
 	t.Run("return status 202 on POST /api/sensor/", func(t *testing.T) {
-		request := newPostRequest("api/sensor/")
+		request := newPostRequest("api/sensor/", nil)
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
@@ -89,8 +91,8 @@ func TestSensorAPI(t *testing.T) {
 		assertResponseCode(t, response.Code, http.StatusAccepted)
 	})
 
-	t.Run("return status 503 on POST /api/sensor/test", func(t *testing.T) {
-		request := newPostRequest("api/sensor/test")
+	t.Run("return status 501 on POST /api/sensor/test", func(t *testing.T) {
+		request := newPostRequest("api/sensor/test", nil)
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
@@ -99,12 +101,48 @@ func TestSensorAPI(t *testing.T) {
 	})
 
 	t.Run("return status 202 on PUT /api/sensor/test", func(t *testing.T) {
-		request := newPutRequest("api/sensor/test")
+		request := newPutRequest("api/sensor/test", nil)
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
 
 		assertResponseCode(t, response.Code, http.StatusAccepted)
+	})
+}
+
+// integration tests
+func TestIntegrationSensorAPI(t *testing.T) {
+	store := StubHivemindStore{
+		map[string]int{
+			"test": 64,
+		},
+	}
+	server := NewHivemindServer(&store)
+
+	t.Run("integration test: /api/sensor/test", func(t *testing.T) {
+		request := newGetRequest("api/sensor/test")
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertResponseCode(t, response.Code, http.StatusOK)
+		assertBody(t, response.Body.String(), "64")
+		assertContentType(t, response.Header().Get("content-type"), "application/json")
+
+		request = newPutRequest("api/sensor/test", strings.NewReader("12"))
+		response = httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertResponseCode(t, response.Code, http.StatusAccepted)
+
+		request = newGetRequest("api/sensor/test")
+		response = httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertResponseCode(t, response.Code, http.StatusOK)
+		assertBody(t, response.Body.String(), "12")
 	})
 }
 
@@ -115,6 +153,12 @@ type StubHivemindStore struct {
 
 func (s *StubHivemindStore) getSensorValue(id string) int {
 	return s.sensors[id]
+}
+
+func (s *StubHivemindStore) storeSensorValue(id string, value int) error {
+	var err error
+	s.sensors[id] = value
+	return err
 }
 
 // helpers
@@ -144,13 +188,13 @@ func newGetRequest(url string) *http.Request {
 	return req
 }
 
-func newPostRequest(url string) *http.Request {
-	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/%s", url), nil)
+func newPostRequest(url string, data io.Reader) *http.Request {
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/%s", url), data)
 	return req
 }
 
-func newPutRequest(url string) *http.Request {
-	req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("/%s", url), nil)
+func newPutRequest(url string, data io.Reader) *http.Request {
+	req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("/%s", url), data)
 	return req
 }
 
