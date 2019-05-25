@@ -7,8 +7,8 @@ import (
 
 func main() {
 	store := InMemoryHivemindStore{
-		map[string]int{
-			"test": 5678,
+		map[string]Sensor{
+			"test": Sensor{"test", 5678},
 		},
 	}
 	server := NewHivemindServer(&store)

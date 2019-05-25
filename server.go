@@ -1,17 +1,23 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
+// Sensor represents a sensor with and ID and current value
+type Sensor struct {
+	ID    string
+	Value int
+}
+
 // HivemindStore is an interface for datastorage
 type HivemindStore interface {
-	getSensorValue(id string) int
-	storeSensorValue(id string, value int) error
+	getSensor(id string) (Sensor, error)
+	storeSensorValue(id string, value Sensor) error
 }
 
 // HivemindServer is a HTTP interface for Hivemind
@@ -72,11 +78,11 @@ func (h *HivemindServer) apiSensorHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (h *HivemindServer) apiSensorGet(w http.ResponseWriter, trailing, id string) {
-	value := h.store.getSensorValue(id)
-	if value == 0 {
+	value, err := h.store.getSensor(id)
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 	}
-	fmt.Fprint(w, value)
+	json.NewEncoder(w).Encode(value)
 }
 
 func (h *HivemindServer) apiSensorPost(w http.ResponseWriter, trailing, id string) {
@@ -89,7 +95,7 @@ func (h *HivemindServer) apiSensorPost(w http.ResponseWriter, trailing, id strin
 
 func (h *HivemindServer) apiSensorPut(w http.ResponseWriter, trailing, id string, body []byte) {
 	value, _ := strconv.Atoi(string(body))
-	err := h.store.storeSensorValue(id, value)
+	err := h.store.storeSensorValue(id, Sensor{id, value})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
