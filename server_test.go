@@ -60,7 +60,8 @@ func TestServer(t *testing.T) {
 func TestSensorAPI(t *testing.T) {
 	store := StubHivemindStore{
 		map[string]Sensor{
-			"test": Sensor{"test", 64},
+			"test":   Sensor{"test", 64},
+			"second": Sensor{"second", 2},
 		},
 	}
 	server := NewHivemindServer(&store)
@@ -88,8 +89,26 @@ func TestSensorAPI(t *testing.T) {
 		assertResponseCode(t, response.Code, http.StatusNotFound)
 	})
 
+	t.Run("return api sensor table as json, status 200 on GET /api/sensor/", func(t *testing.T) {
+		want := []Sensor{
+			{"test", 64},
+			{"second", 2},
+		}
+
+		request := newGetRequest("api/sensor/")
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		got := getSensorSliceFromResponse(t, response.Body)
+
+		assertResponseCode(t, response.Code, http.StatusOK)
+		assertContentType(t, response.Header().Get("content-type"), "application/json")
+		assertSensorSlice(t, got, want)
+	})
+
 	t.Run("return status 202 on POST /api/sensor/", func(t *testing.T) {
-		request := newPostRequest("api/sensor/", nil)
+		request := newPostRequest("api/sensor/", strings.NewReader("{\"ID\": \"status_202\", \"Value\": 202}"))
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
@@ -157,6 +176,26 @@ func TestIntegrationSensorAPI(t *testing.T) {
 		assertContentType(t, response.Header().Get("content-type"), "application/json")
 		assertSensor(t, got, want)
 	})
+
+	t.Run("integration test: /api/sensor/", func(t *testing.T) {
+		want := []Sensor{
+			{"test", 12},
+			{"third", 3},
+		}
+
+		server.ServeHTTP(httptest.NewRecorder(), newPostRequest("api/sensor/", strings.NewReader("{\"ID\": \"third\", \"Value\": 3 }")))
+
+		request := newGetRequest("api/sensor/")
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		got := getSensorSliceFromResponse(t, response.Body)
+
+		assertResponseCode(t, response.Code, http.StatusOK)
+		assertContentType(t, response.Header().Get("content-type"), "application/json")
+		assertSensorSlice(t, got, want)
+	})
 }
 
 // stubs
@@ -173,9 +212,23 @@ func (s *StubHivemindStore) getSensor(id string) (Sensor, error) {
 	return sensor, err
 }
 
+func (s *StubHivemindStore) getAllSensors() []Sensor {
+	var sensors []Sensor
+	for _, sensor := range s.sensors {
+		sensors = append(sensors, sensor)
+	}
+	return sensors
+}
+
 func (s *StubHivemindStore) storeSensorValue(id string, value Sensor) error {
 	var err error
 	s.sensors[id] = value
+	return err
+}
+
+func (s *StubHivemindStore) storeSensor(sensor Sensor) error {
+	var err error
+	s.sensors[sensor.ID] = sensor
 	return err
 }
 
@@ -202,6 +255,13 @@ func assertContentType(t *testing.T, got, want string) {
 }
 
 func assertSensor(t *testing.T, got, want Sensor) {
+	t.Helper()
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func assertSensorSlice(t *testing.T, got, want []Sensor) {
 	t.Helper()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, want %v", got, want)
@@ -239,6 +299,16 @@ func getSensorFromResponse(t *testing.T, body io.Reader) (sensor Sensor) {
 
 	if err != nil {
 		t.Fatalf("unable to parse response from server '%s' into Sensor, '%v'", body, err)
+	}
+	return
+}
+
+func getSensorSliceFromResponse(t *testing.T, body io.Reader) (sensors []Sensor) {
+	t.Helper()
+	err := json.NewDecoder(body).Decode(&sensors)
+
+	if err != nil {
+		t.Fatalf("unable to parse response from server '%s' into []Sensor, '%v'", body, err)
 	}
 	return
 }

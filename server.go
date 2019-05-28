@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -17,7 +18,9 @@ type Sensor struct {
 // HivemindStore is an interface for datastorage
 type HivemindStore interface {
 	getSensor(id string) (Sensor, error)
+	getAllSensors() []Sensor
 	storeSensorValue(id string, value Sensor) error
+	storeSensor(s Sensor) error
 }
 
 // HivemindServer is a HTTP interface for Hivemind
@@ -67,7 +70,11 @@ func (h *HivemindServer) apiSensorHandler(w http.ResponseWriter, r *http.Request
 	case http.MethodGet:
 		h.apiSensorGet(w, trailing, id)
 	case http.MethodPost:
-		h.apiSensorPost(w, trailing, id)
+		var body []byte
+		if r.Body != nil {
+			body, _ = ioutil.ReadAll(r.Body)
+		}
+		h.apiSensorPost(w, trailing, body)
 	case http.MethodPut:
 		var body []byte
 		if r.Body != nil {
@@ -78,17 +85,29 @@ func (h *HivemindServer) apiSensorHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (h *HivemindServer) apiSensorGet(w http.ResponseWriter, trailing, id string) {
-	value, err := h.store.getSensor(id)
-	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
+	if id == "" {
+		json.NewEncoder(w).Encode(h.store.getAllSensors())
+	} else {
+		value, err := h.store.getSensor(id)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+		}
+		json.NewEncoder(w).Encode(value)
 	}
-	json.NewEncoder(w).Encode(value)
 }
 
-func (h *HivemindServer) apiSensorPost(w http.ResponseWriter, trailing, id string) {
+func (h *HivemindServer) apiSensorPost(w http.ResponseWriter, trailing string, body []byte) {
 	if trailing != "/" {
 		w.WriteHeader(http.StatusNotImplemented)
 	} else {
+		var s Sensor
+		err := json.Unmarshal(body, &s)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Printf("%v, %s", s, err)
+			return
+		}
+		h.store.storeSensor(s)
 		w.WriteHeader(http.StatusAccepted)
 	}
 }
@@ -98,6 +117,7 @@ func (h *HivemindServer) apiSensorPut(w http.ResponseWriter, trailing, id string
 	err := h.store.storeSensorValue(id, Sensor{id, value})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusAccepted)
 }
