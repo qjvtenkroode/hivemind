@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -85,13 +84,21 @@ func (h *HivemindServer) apiSensorHandler(w http.ResponseWriter, r *http.Request
 
 func (h *HivemindServer) apiSensorGet(w http.ResponseWriter, trailing, id string) {
 	if id == "" {
-		json.NewEncoder(w).Encode(h.store.getAllSensors())
+		err := json.NewEncoder(w).Encode(h.store.getAllSensors())
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	} else {
 		value, err := h.store.getSensor(id)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 		}
-		json.NewEncoder(w).Encode(value)
+		err = json.NewEncoder(w).Encode(value)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -103,10 +110,13 @@ func (h *HivemindServer) apiSensorPost(w http.ResponseWriter, trailing string, b
 		err := json.Unmarshal(body, &s)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Printf("%v, %s", s, err)
 			return
 		}
-		h.store.storeSensor(s)
+		err = h.store.storeSensor(s)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		w.WriteHeader(http.StatusAccepted)
 	}
 }
