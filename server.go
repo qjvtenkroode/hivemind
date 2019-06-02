@@ -19,7 +19,6 @@ type Sensor struct {
 type HivemindStore interface {
 	getSensor(id string) (Sensor, error)
 	getAllSensors() []Sensor
-	storeSensorValue(id string, value Sensor) error
 	storeSensor(s Sensor) error
 }
 
@@ -114,7 +113,7 @@ func (h *HivemindServer) apiSensorPost(w http.ResponseWriter, trailing string, b
 
 func (h *HivemindServer) apiSensorPut(w http.ResponseWriter, trailing, id string, body []byte) {
 	value, _ := strconv.Atoi(string(body))
-	err := h.store.storeSensorValue(id, Sensor{id, value})
+	err := h.store.storeSensor(Sensor{id, value})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

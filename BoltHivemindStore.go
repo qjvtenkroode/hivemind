@@ -57,24 +57,6 @@ func (b *BoltHivemindStore) getAllSensors() []Sensor {
 	return sensors
 }
 
-func (b *BoltHivemindStore) storeSensorValue(id string, value Sensor) error {
-	var err error
-
-	err = b.database.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("sensor"))
-		if err != nil {
-			return err
-		}
-		encoded, err := json.Marshal(value)
-		if err != nil {
-			return err
-		}
-		return bucket.Put([]byte(id), encoded)
-	})
-
-	return err
-}
-
 func (b *BoltHivemindStore) storeSensor(sensor Sensor) error {
 	var err error
 

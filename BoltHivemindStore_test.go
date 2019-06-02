@@ -65,19 +65,6 @@ func TestBoltHivemindStore(t *testing.T) {
 		assertSensorSlice(t, got, want)
 	})
 
-	t.Run("storeSensorValue: storing a new value", func(t *testing.T) {
-		var want error
-		s := Sensor{"13", 1988}
-
-		store := BoltHivemindStore{database}
-
-		got := store.storeSensorValue(s.ID, s)
-
-		if got != want {
-			t.Errorf("failure within storeSensorValue: %s", err)
-		}
-	})
-
 	t.Run("storeSensor: storing a new sensor", func(t *testing.T) {
 		var want error
 		s := Sensor{"new", 2019}
