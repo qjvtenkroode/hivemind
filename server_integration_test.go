@@ -12,18 +12,21 @@ import (
 
 // integration tests
 func TestIntegrationSensorAPI(t *testing.T) {
-	/*store := StubHivemindStore{
-		map[string]Sensor{
-			"test": Sensor{"test", 64},
-		},
-	}
-	*/
-
 	database, err := bolt.Open("integration_test.db", 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		t.Fatalf("setup for testing failed: %s", err)
 	}
 	defer database.Close()
+	defer deleteDatabase(t, "integration_test.db")
+
+	seed := []Sensor{
+		Sensor{"test", 64},
+	}
+
+	err = seedBoltDB(t, database, seed)
+	if err != nil {
+		t.Fatalf("seed BoltDB for integration failed: %s", err)
+	}
 
 	store := BoltHivemindStore{database}
 	server := NewHivemindServer(&store)

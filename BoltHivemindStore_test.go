@@ -1,8 +1,6 @@
 package main
 
 import (
-	"encoding/json"
-	"os"
 	"testing"
 	"time"
 
@@ -15,9 +13,14 @@ func TestBoltHivemindStore(t *testing.T) {
 		t.Fatalf("setup for testing failed: %s", err)
 	}
 	defer database.Close()
-	defer deleteDatabase(t)
+	defer deleteDatabase(t, "test.db")
 
-	err = seedBoltDB(t, database)
+	seed := []Sensor{
+		Sensor{"13", 666},
+		Sensor{"first", 1},
+	}
+
+	err = seedBoltDB(t, database, seed)
 	if err != nil {
 		t.Fatalf("seed BoltDB failed: %s", err)
 	}
@@ -87,49 +90,4 @@ func TestBoltHivemindStore(t *testing.T) {
 			t.Errorf("failure within storeSensor: %s", err)
 		}
 	})
-}
-
-// helpers
-func seedBoltDB(t *testing.T, database *bolt.DB) error {
-	t.Helper()
-	var err error
-
-	seed := []Sensor{
-		Sensor{"13", 666},
-		Sensor{"first", 1},
-	}
-
-	for _, s := range seed {
-		encoded, err := json.Marshal(s)
-		if err != nil {
-			return err
-		}
-		err = database.Update(func(tx *bolt.Tx) error {
-			bucket, err := tx.CreateBucketIfNotExists([]byte("sensor"))
-			if err != nil {
-				return err
-			}
-
-			err = bucket.Put([]byte(s.ID), encoded)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			t.Fatalf("seed failed: %s", err)
-		}
-	}
-
-	return err
-}
-
-func deleteDatabase(t *testing.T) error {
-	t.Helper()
-	var err error
-	err = os.Remove("test.db")
-	if err != nil {
-		t.Fatalf("clean database failed: %s", err)
-	}
-	return err
 }
