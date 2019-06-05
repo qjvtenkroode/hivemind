@@ -1,6 +1,8 @@
 package main
 
-import "errors"
+import (
+	"errors"
+)
 
 // InMemoryHivemindStore is a small in-memory implementation of a HivemindStore
 type InMemoryHivemindStore struct {

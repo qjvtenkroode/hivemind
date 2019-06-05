@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/boltdb/bolt"
@@ -43,6 +44,9 @@ func assertSensor(t *testing.T, got, want Sensor) {
 
 func assertSensorSlice(t *testing.T, got, want []Sensor) {
 	t.Helper()
+	sort.Slice(got, func(i, j int) bool {
+		return got[i].Value > got[j].Value
+	})
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, want %v", got, want)
 	}
