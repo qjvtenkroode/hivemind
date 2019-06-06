@@ -74,3 +74,37 @@ func (b *BoltHivemindStore) storeSensor(sensor Sensor) error {
 
 	return err
 }
+
+func (b *BoltHivemindStore) getSwitch(id string) (Switch, error) {
+	var err error
+	var sw Switch
+	err = b.database.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte("switch"))
+		if bucket == nil {
+			return nil
+		}
+		v := bucket.Get([]byte(id))
+		if v == nil {
+			return nil
+		}
+		err = json.Unmarshal(v, &sw)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	return sw, err
+}
+
+// TODO fix function
+func (b *BoltHivemindStore) getAllSwitches() []Switch {
+	var switches []Switch
+	return switches
+}
+
+// TODO fix function
+func (b *BoltHivemindStore) storeSwitch(sw Switch) error {
+	var err error
+	return err
+}

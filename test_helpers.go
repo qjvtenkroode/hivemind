@@ -135,3 +135,40 @@ func deleteDatabase(t *testing.T, db string) error {
 	}
 	return err
 }
+
+func assertSwitch(t *testing.T, got, want Switch) {
+	t.Helper()
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func getSwitchFromResponse(t *testing.T, body io.Reader) (sw Switch) {
+	t.Helper()
+	err := json.NewDecoder(body).Decode(&sw)
+
+	if err != nil {
+		t.Fatalf("unable to parse response from server '%s' into Switch, '%v'", body, err)
+	}
+	return
+}
+
+func assertSwitchSlice(t *testing.T, got, want []Switch) {
+	t.Helper()
+	sort.Slice(got, func(i, j int) bool {
+		return got[i].ID > got[j].ID
+	})
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func getSwitchSliceFromResponse(t *testing.T, body io.Reader) (switches []Switch) {
+	t.Helper()
+	err := json.NewDecoder(body).Decode(&switches)
+
+	if err != nil {
+		t.Fatalf("unable to parse response from server '%s' into []Switch, '%v'", body, err)
+	}
+	return
+}
