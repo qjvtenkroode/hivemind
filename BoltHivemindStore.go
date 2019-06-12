@@ -97,14 +97,44 @@ func (b *BoltHivemindStore) getSwitch(id string) (Switch, error) {
 	return sw, err
 }
 
-// TODO fix function
 func (b *BoltHivemindStore) getAllSwitches() []Switch {
 	var switches []Switch
+
+	_ = b.database.View(func(tx *bolt.Tx) error {
+		var sw Switch
+		bucket := tx.Bucket([]byte("switch"))
+		if bucket == nil {
+			return nil
+		}
+		c := bucket.Cursor()
+
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			err := json.Unmarshal(v, &sw)
+			if err != nil {
+				return err
+			}
+			switches = append(switches, sw)
+		}
+		return nil
+	})
+
 	return switches
 }
 
-// TODO fix function
 func (b *BoltHivemindStore) storeSwitch(sw Switch) error {
 	var err error
+
+	err = b.database.Update(func(tx *bolt.Tx) error {
+		bucket, err := tx.CreateBucketIfNotExists([]byte("switch"))
+		if err != nil {
+			return err
+		}
+		encoded, err := json.Marshal(sw)
+		if err != nil {
+			return err
+		}
+		return bucket.Put([]byte(sw.ID), encoded)
+	})
+
 	return err
 }
