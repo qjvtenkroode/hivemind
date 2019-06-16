@@ -59,6 +59,7 @@ func TestSensorAPI(t *testing.T) {
 			"test":   Sensor{"test", 64},
 			"second": Sensor{"second", 2},
 		},
+		nil,
 	}
 	server := NewHivemindServer(&store)
 
@@ -131,9 +132,89 @@ func TestSensorAPI(t *testing.T) {
 	})
 }
 
+func TestSwitchAPI(t *testing.T) {
+	store := StubHivemindStore{
+		nil,
+		map[string]Switch{
+			"test":   Switch{"test", true},
+			"second": Switch{"second", false},
+		},
+	}
+	server := NewHivemindServer(&store)
+
+	t.Run("return json value: true, status 200 on GET /api/switch/test", func(t *testing.T) {
+		want := Switch{"test", true}
+		request := newGetRequest("api/switch/test")
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		got := getSwitchFromResponse(t, response.Body)
+
+		assertResponseCode(t, response.Code, http.StatusOK)
+		assertContentType(t, response.Header().Get("content-type"), "application/json")
+		assertSwitch(t, got, want)
+	})
+
+	t.Run("return status 404 on GET /api/switch/{random}", func(t *testing.T) {
+		request := newGetRequest(fmt.Sprintf("api/switch/%s", randomString(8)))
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertResponseCode(t, response.Code, http.StatusNotFound)
+	})
+
+	t.Run("return api switch table as json, status 200 on GET /api/sensor/", func(t *testing.T) {
+		want := []Switch{
+			{"test", true},
+			{"second", false},
+		}
+
+		request := newGetRequest("api/switch/")
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		got := getSwitchSliceFromResponse(t, response.Body)
+
+		assertResponseCode(t, response.Code, http.StatusOK)
+		assertContentType(t, response.Header().Get("content-type"), "application/json")
+		assertSwitchSlice(t, got, want)
+	})
+
+	t.Run("return status 202 on POST /api/switch/", func(t *testing.T) {
+		request := newPostRequest("api/switch/", strings.NewReader("{\"ID\": \"status_202\", \"State\": false}"))
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertResponseCode(t, response.Code, http.StatusAccepted)
+	})
+
+	t.Run("return status 501 on POST /api/switch/test", func(t *testing.T) {
+		request := newPostRequest("api/switch/test", nil)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertResponseCode(t, response.Code, http.StatusNotImplemented)
+	})
+
+	t.Run("return status 202 on PUT /api/switch/test", func(t *testing.T) {
+		request := newPutRequest("api/switch/test", nil)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertResponseCode(t, response.Code, http.StatusAccepted)
+	})
+}
+
 // stubs
 type StubHivemindStore struct {
-	sensors map[string]Sensor
+	sensors  map[string]Sensor
+	switches map[string]Switch
 }
 
 func (s *StubHivemindStore) getSensor(id string) (Sensor, error) {
@@ -153,14 +234,31 @@ func (s *StubHivemindStore) getAllSensors() []Sensor {
 	return sensors
 }
 
-func (s *StubHivemindStore) storeSensorValue(id string, value Sensor) error {
-	var err error
-	s.sensors[id] = value
-	return err
-}
-
 func (s *StubHivemindStore) storeSensor(sensor Sensor) error {
 	var err error
 	s.sensors[sensor.ID] = sensor
+	return err
+}
+
+func (s *StubHivemindStore) getSwitch(id string) (Switch, error) {
+	var err error
+	sw, ok := s.switches[id]
+	if !ok {
+		err = errors.New("Switch not found in store")
+	}
+	return sw, err
+}
+
+func (s *StubHivemindStore) getAllSwitches() []Switch {
+	var switches []Switch
+	for _, sw := range s.switches {
+		switches = append(switches, sw)
+	}
+	return switches
+}
+
+func (s *StubHivemindStore) storeSwitch(sw Switch) error {
+	var err error
+	s.switches[sw.ID] = sw
 	return err
 }
