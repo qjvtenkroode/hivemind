@@ -74,6 +74,8 @@ func (h *HivemindServer) apiSensorHandler(w http.ResponseWriter, r *http.Request
 	trailing := r.URL.Path[len("/api/sensor"):]
 	id := strings.Split(trailing[1:], "/")[0]
 	w.Header().Set("content-type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	switch r.Method {
 	case http.MethodGet:
 		h.apiSensorGet(w, trailing, id)
@@ -147,6 +149,7 @@ func (h *HivemindServer) apiSwitchHandler(w http.ResponseWriter, r *http.Request
 	trailing := r.URL.Path[len("/api/switch"):]
 	id := strings.Split(trailing[1:], "/")[0]
 	w.Header().Set("content-type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	switch r.Method {
 	case http.MethodGet:
 		h.apiSwitchGet(w, trailing, id)
