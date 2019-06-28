@@ -1,23 +1,22 @@
 <template>
-  <div id="switches">
-    <table>
-      <thead>
-        <tr>
-          <th>Switch ID</th>
-          <th>Switch State</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="sw in switches" :key="sw.ID">
-          <td>{{ sw.ID }}</td>
-          <td>{{ sw.State }}</td>
-          <td>
-            <button>Toggle</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="row" id="switches">
+    <div class="col s3" v-for="sw in switches" :key="sw.ID">
+      <div class="card">
+        <div class="card-content">
+          <center><span class="card-title">{{ sw.ID }}</span></center>
+          <div class="card-action">
+            <div class="switch">
+              <label>
+                Off
+                <input type="checkbox" v-model="sw.State" :id="sw.ID">
+                <span class="lever"></span>
+                On
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -31,19 +30,27 @@
 
     },
     created() {
-      fetch('http://localhost:5000/api/switch/')
-        .then(response => response.json())
-        .then(json => {
-          this.switches = json
-        })
+      this.fetchSwitches();
+      this.timer = setInterval(this.fetchSwitches, 5000)
     },
-    data() {
+    data: function() {
       return {
-        switches: []
+        switches: [],
+        timer: '',
       }
     },
     methods: {
-
+      fetchSwitches: function() {
+        fetch('http://localhost:5000/api/switch/')
+          .then(response => response.json())
+          .then(json => {
+            this.switches = json
+          })
+      },
+      cancelAutoUpdate: function() { clearInterval(this.timer) }
+    },
+    beforeDestroy() {
+      clearInterval(this.timer)
     },
     computed: {
 

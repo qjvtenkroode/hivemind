@@ -1,23 +1,11 @@
 <template>
-  <div id="sensors">
-    <table>
-      <thead>
-        <tr>
-          <th>Sensor ID</th>
-          <th>Sensor Value</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="s in sensors" :key="s.ID">
-          <td>{{ s.ID }}</td>
-          <td>{{ s.Value }}</td>
-          <td>
-            <button>New value</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="row" id="sensors">
+    <div class="collection">
+        <a href="#!" class="collection-item" v-for="s in sensors" :key="s.ID">
+          {{ s.ID }}
+          <span class="badge">{{ s.Value }}</span>
+        </a>
+    </div>
   </div>
 </template>
 
@@ -31,19 +19,27 @@
 
     },
     created() {
-      fetch('http://localhost:5000/api/sensor/')
-        .then(response => response.json())
-        .then(json => {
-          this.sensors = json
-        })
+      this.fetchSensors();
+      this.timer = setInterval(this.fetchSensors, 5000)
     },
     data() {
       return {
-        sensors: []
+        sensors: [],
+        timer: '',
       }
     },
     methods: {
-
+      fetchSensors: function() {
+        fetch('http://localhost:5000/api/sensor/')
+          .then(response => response.json())
+          .then(json => {
+            this.sensors = json
+          })
+      },
+      cancelAutoUpdate: function() { clearInterval(this.timer) }
+    },
+    beforeDestroy() {
+      clearInterval(this.timer)
     },
     computed: {
 
