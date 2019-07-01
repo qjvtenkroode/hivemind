@@ -16,8 +16,8 @@ func TestBoltHivemindStore(t *testing.T) {
 	defer deleteDatabase(t, "test.db")
 
 	seed := []Sensor{
-		Sensor{"13", 666},
-		Sensor{"first", 1},
+		Sensor{"13", "13", "C", "generic", 666},
+		Sensor{"first", "First", "C", "generic", 1},
 	}
 
 	err = seedBoltDB(t, database, seed)
@@ -26,7 +26,7 @@ func TestBoltHivemindStore(t *testing.T) {
 	}
 
 	t.Run("getSensor: json object matches", func(t *testing.T) {
-		want := Sensor{"13", 666}
+		want := Sensor{"13", "13", "C", "generic", 666}
 
 		store := BoltHivemindStore{database}
 
@@ -54,8 +54,8 @@ func TestBoltHivemindStore(t *testing.T) {
 
 	t.Run("getAllSensors: get slice and match", func(t *testing.T) {
 		want := []Sensor{
-			Sensor{"13", 666},
-			Sensor{"first", 1},
+			Sensor{"13", "13", "C", "generic", 666},
+			Sensor{"first", "First", "C", "generic", 1},
 		}
 
 		store := BoltHivemindStore{database}
@@ -67,7 +67,7 @@ func TestBoltHivemindStore(t *testing.T) {
 
 	t.Run("storeSensor: storing a new sensor", func(t *testing.T) {
 		var want error
-		s := Sensor{"new", 2019}
+		s := Sensor{"new", "New", "C", "generic", 2019}
 
 		store := BoltHivemindStore{database}
 

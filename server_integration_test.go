@@ -20,7 +20,7 @@ func TestIntegrationSensorAPI(t *testing.T) {
 	defer deleteDatabase(t, "integration_test.db")
 
 	seed := []Sensor{
-		Sensor{"test", 64},
+		Sensor{"test", "Test", "C", "generic", 64},
 	}
 
 	err = seedBoltDB(t, database, seed)
@@ -32,7 +32,7 @@ func TestIntegrationSensorAPI(t *testing.T) {
 	server := NewHivemindServer(&store)
 
 	t.Run("integration test: /api/sensor/test", func(t *testing.T) {
-		want := Sensor{"test", 64}
+		want := Sensor{"test", "Test", "C", "generic", 64}
 		request := newGetRequest("api/sensor/test")
 		response := httptest.NewRecorder()
 
@@ -44,14 +44,14 @@ func TestIntegrationSensorAPI(t *testing.T) {
 		assertContentType(t, response.Header().Get("content-type"), "application/json")
 		assertSensor(t, got, want)
 
-		request = newPutRequest("api/sensor/test", strings.NewReader("12"))
+		request = newPutRequest("api/sensor/test", strings.NewReader("{\"ID\": \"test\", \"Name\": \"Test\", \"Unit\": \"C\", \"Type\": \"generic\", \"Value\": 12}"))
 		response = httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
 
 		assertResponseCode(t, response.Code, http.StatusAccepted)
 
-		want = Sensor{"test", 12}
+		want = Sensor{"test", "Test", "C", "generic", 12}
 		request = newGetRequest("api/sensor/test")
 		response = httptest.NewRecorder()
 
@@ -66,11 +66,11 @@ func TestIntegrationSensorAPI(t *testing.T) {
 
 	t.Run("integration test: /api/sensor/", func(t *testing.T) {
 		want := []Sensor{
-			{"test", 12},
-			{"third", 3},
+			{"test", "Test", "C", "generic", 12},
+			{"third", "Third", "C", "generic", 3},
 		}
 
-		server.ServeHTTP(httptest.NewRecorder(), newPostRequest("api/sensor/", strings.NewReader("{\"ID\": \"third\", \"Value\": 3 }")))
+		server.ServeHTTP(httptest.NewRecorder(), newPostRequest("api/sensor/", strings.NewReader("{\"ID\": \"third\", \"Name\": \"Third\", \"Unit\": \"C\", \"Type\": \"generic\", \"Value\": 3 }")))
 
 		request := newGetRequest("api/sensor/")
 		response := httptest.NewRecorder()

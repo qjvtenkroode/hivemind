@@ -4,31 +4,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"strings"
 )
-
-// Sensor represents a sensor with an ID and current value
-type Sensor struct {
-	ID    string
-	Value int
-}
-
-// Switch represents a switch with an ID and current boolean state
-type Switch struct {
-	ID    string
-	State bool
-}
-
-// HivemindStore is an interface for datastorage
-type HivemindStore interface {
-	getSensor(id string) (Sensor, error)
-	getAllSensors() []Sensor
-	storeSensor(s Sensor) error
-	getSwitch(id string) (Switch, error)
-	getAllSwitches() []Switch
-	storeSwitch(s Switch) error
-}
 
 // HivemindServer is a HTTP interface for Hivemind
 type HivemindServer struct {
@@ -74,6 +51,8 @@ func (h *HivemindServer) apiSensorHandler(w http.ResponseWriter, r *http.Request
 	trailing := r.URL.Path[len("/api/sensor"):]
 	id := strings.Split(trailing[1:], "/")[0]
 	w.Header().Set("content-type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	switch r.Method {
 	case http.MethodGet:
 		h.apiSensorGet(w, trailing, id)
@@ -134,8 +113,13 @@ func (h *HivemindServer) apiSensorPost(w http.ResponseWriter, trailing string, b
 }
 
 func (h *HivemindServer) apiSensorPut(w http.ResponseWriter, trailing, id string, body []byte) {
-	value, _ := strconv.Atoi(string(body))
-	err := h.store.storeSensor(Sensor{id, value})
+	var s Sensor
+	err := json.Unmarshal(body, &s)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = h.store.storeSensor(s)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -147,6 +131,7 @@ func (h *HivemindServer) apiSwitchHandler(w http.ResponseWriter, r *http.Request
 	trailing := r.URL.Path[len("/api/switch"):]
 	id := strings.Split(trailing[1:], "/")[0]
 	w.Header().Set("content-type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	switch r.Method {
 	case http.MethodGet:
 		h.apiSwitchGet(w, trailing, id)
@@ -207,8 +192,13 @@ func (h *HivemindServer) apiSwitchPost(w http.ResponseWriter, trailing string, b
 }
 
 func (h *HivemindServer) apiSwitchPut(w http.ResponseWriter, trailing, id string, body []byte) {
-	state, _ := strconv.ParseBool(string(body))
-	err := h.store.storeSwitch(Switch{id, state})
+	var s Switch
+	err := json.Unmarshal(body, &s)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = h.store.storeSwitch(s)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
