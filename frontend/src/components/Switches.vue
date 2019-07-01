@@ -3,7 +3,7 @@
     <div class="col s3" v-for="sw in switches" :key="sw.ID">
       <div class="card">
         <div class="card-content">
-          <center><span class="card-title">{{ sw.ID }}</span></center>
+          <center><span class="card-title">{{ sw.Name }}</span></center>
           <div class="card-action">
             <div class="switch">
               <label>

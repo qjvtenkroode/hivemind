@@ -56,15 +56,15 @@ func TestServer(t *testing.T) {
 func TestSensorAPI(t *testing.T) {
 	store := StubHivemindStore{
 		map[string]Sensor{
-			"test":   Sensor{"test", 64},
-			"second": Sensor{"second", 2},
+			"test":   Sensor{"test", "Test", "C", "generic", 64},
+			"second": Sensor{"second", "Second", "C", "generic", 2},
 		},
 		nil,
 	}
 	server := NewHivemindServer(&store)
 
 	t.Run("return json value: 64, status 200 on GET /api/sensor/test", func(t *testing.T) {
-		want := Sensor{"test", 64}
+		want := Sensor{"test", "Test", "C", "generic", 64}
 		request := newGetRequest("api/sensor/test")
 		response := httptest.NewRecorder()
 
@@ -88,8 +88,8 @@ func TestSensorAPI(t *testing.T) {
 
 	t.Run("return api sensor table as json, status 200 on GET /api/sensor/", func(t *testing.T) {
 		want := []Sensor{
-			{"test", 64},
-			{"second", 2},
+			{"test", "Test", "C", "generic", 64},
+			{"second", "Second", "C", "generic", 2},
 		}
 
 		request := newGetRequest("api/sensor/")
@@ -105,7 +105,7 @@ func TestSensorAPI(t *testing.T) {
 	})
 
 	t.Run("return status 202 on POST /api/sensor/", func(t *testing.T) {
-		request := newPostRequest("api/sensor/", strings.NewReader("{\"ID\": \"status_202\", \"Value\": 202}"))
+		request := newPostRequest("api/sensor/", strings.NewReader("{\"ID\": \"status_202\", \"Name\": \"Status 202\", \"Unit\": \"C\", \"Type\": \"generic\", \"Value\": 202}"))
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
@@ -123,7 +123,7 @@ func TestSensorAPI(t *testing.T) {
 	})
 
 	t.Run("return status 202 on PUT /api/sensor/test", func(t *testing.T) {
-		request := newPutRequest("api/sensor/test", nil)
+		request := newPutRequest("api/sensor/test", strings.NewReader("{\"ID\": \"test\", \"Name\": \"Test\", \"Unit\": \"C\", \"Type\": \"generic\", \"Value\": 1234}"))
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
@@ -136,14 +136,14 @@ func TestSwitchAPI(t *testing.T) {
 	store := StubHivemindStore{
 		nil,
 		map[string]Switch{
-			"test":   Switch{"test", true},
-			"second": Switch{"second", false},
+			"test":   Switch{"test", "test", "generic", true},
+			"second": Switch{"second", "second", "generic", false},
 		},
 	}
 	server := NewHivemindServer(&store)
 
 	t.Run("return json value: true, status 200 on GET /api/switch/test", func(t *testing.T) {
-		want := Switch{"test", true}
+		want := Switch{"test", "test", "generic", true}
 		request := newGetRequest("api/switch/test")
 		response := httptest.NewRecorder()
 
@@ -167,8 +167,8 @@ func TestSwitchAPI(t *testing.T) {
 
 	t.Run("return api switch table as json, status 200 on GET /api/sensor/", func(t *testing.T) {
 		want := []Switch{
-			{"test", true},
-			{"second", false},
+			{"test", "test", "generic", true},
+			{"second", "second", "generic", false},
 		}
 
 		request := newGetRequest("api/switch/")
@@ -184,7 +184,7 @@ func TestSwitchAPI(t *testing.T) {
 	})
 
 	t.Run("return status 202 on POST /api/switch/", func(t *testing.T) {
-		request := newPostRequest("api/switch/", strings.NewReader("{\"ID\": \"status_202\", \"State\": false}"))
+		request := newPostRequest("api/switch/", strings.NewReader("{\"ID\": \"status_202\", \"Name\": \"Status 200\", \"State\": false}"))
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
@@ -202,7 +202,7 @@ func TestSwitchAPI(t *testing.T) {
 	})
 
 	t.Run("return status 202 on PUT /api/switch/test", func(t *testing.T) {
-		request := newPutRequest("api/switch/test", nil)
+		request := newPutRequest("api/switch/test", strings.NewReader("{\"ID\": \"test\", \"Name\": \"test\", \"State\": false}"))
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)

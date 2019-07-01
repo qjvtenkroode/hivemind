@@ -2,8 +2,8 @@
   <div class="row" id="sensors">
     <div class="collection">
         <a href="#!" class="collection-item" v-for="s in sensors" :key="s.ID">
-          {{ s.ID }}
-          <span class="badge">{{ s.Value }}</span>
+          {{ s.Name }}
+          <span class="badge" :data-badge-caption="s.Unit">{{ s.Value }}</span>
         </a>
     </div>
   </div>
